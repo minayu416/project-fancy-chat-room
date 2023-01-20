@@ -61,8 +61,8 @@ function App() {
             </div>
           </div>
           
-          <ChatRoom />
-          {/* {user ? <ChatRoom /> : <SignIn />} */}
+          {/* <ChatRoom /> */}
+          {user ? <ChatRoom /> : <SignIn />}
 
         </div>
 
@@ -80,6 +80,8 @@ function SignIn() {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential.accessToken;
       const user = result.user;
+      console.log("result:")
+      console.log(result)
     }).catch((error) => {
       const errorCode = error.code;
       const errorMessage = error.message;
