@@ -6,7 +6,7 @@ import './App.css';
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { getDatabase, ref, set, onValue } from 'firebase/database';
+import { serverTimestamp, getDatabase, ref, set, push, get, child, query, orderByChild, limitToFirst, limitToLast } from 'firebase/database';
 
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -27,13 +27,43 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-function writeSendMessage(userId, text, email, imageUrl) {
+function writeSendMessage(userId, name, text, imageUrl) {
   // const db = getDatabase();
-  set(ref(db, 'messages/' + userId), {
+  const postListRef = ref(db, 'messages');
+  const newPostRef = push(postListRef);
+  set(newPostRef, {
     userId: userId,
+    name: name,
     text: text,
-    createdAt: email,
+    createdAt: serverTimestamp(),
     photoURL : imageUrl
+  });
+
+  // set(ref(db, 'messages/' + userId), {
+  //   userId: userId,
+  //   name: name,
+  //   text: text,
+  //   createdAt: serverTimestamp(),
+  //   photoURL : imageUrl
+  // });
+}
+
+function getMessages(){
+  const que = query(ref(db, 'messages'), orderByChild('createdAt'), limitToLast(10));
+  get(que).then((snapshot) => {
+    if (snapshot.exists()) {
+      const messages = []
+      snapshot.forEach(childSnapshot => {
+        messages.push(childSnapshot.val())
+      })
+      console.log(messages)
+      return messages
+      // console.log(getMessages);
+    } else {
+      console.log("No data available");
+    }
+  }).catch((error) => {
+    console.error(error);
   });
 }
 
@@ -47,7 +77,6 @@ function App() {
   // });
 
   const [user] = useAuthState(auth);
-  console.log([user])
 
   return (
     <div className="App">
@@ -61,8 +90,8 @@ function App() {
             </div>
           </div>
           
-          <ChatRoom />
-          {/* {user ? <ChatRoom /> : <SignIn />} */}
+          {/* <ChatRoom /> */}
+          {user ? <ChatRoom /> : <SignIn />}
 
         </div>
 
@@ -73,8 +102,9 @@ function App() {
 
 
 function SignIn() {
+
+  const signInWithGoogle = () => {
     const provider = new GoogleAuthProvider();
-    
     signInWithPopup(auth, provider)
     .then((result) => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -86,37 +116,25 @@ function SignIn() {
       const email = error.email;
       const credential = GoogleAuthProvider.credentialFromError(error);
     });
+  }
 
   return (
     <>
-      <button className="sign-in" onClick={signInWithPopup}>Sign in with Google</button>
-      <p>Do not violate the community guidelines or you will be banned for life!</p>
+          <div class='h-96 w-72 bg-black opacity-40 px-4 py-2'>
+
+          <button className="sign-in" onClick={signInWithGoogle}>Sign in with Google</button>
+            <p>Do not violate the community guidelines or you will be banned for life!</p>
+          </div>
+
+          <div class='flex w-72 bg-black opacity-70 rounded-b-3xl'>
+            <div class="ml-4 my-3 pr-30 text-slate-500 text-xs">Type message...</div>
+            <div class="my-2 px-2 py-1 bg-green-700 rounded-2xl text-xs font-bold">SEND</div>
+          </div>
+
     </>
   )
 
 }
-
-// const login = () => {
-//   signInWithPopup(auth, provider)
-//       .then((result) => {
-//           // This gives you a Google Access Token. You can use it to access the Google API.
-//           const credential = GoogleAuthProvider.credentialFromResult(result);
-//           const token = credential?.accessToken;
-//           // The signed-in user info.
-//           const user = result.user;
-//           console.log({ credential, token, user });
-//       })
-//       .catch((error) => {
-//           // Handle Errors here.
-//           const errorCode = error.code;
-//           const errorMessage = error.message;
-//           // The email of the user's account used.
-//           const email = error.email;
-//           // The AuthCredential type that was used.
-//           const credential = GoogleAuthProvider.credentialFromError(error);
-//           console.log({ errorCode, errorMessage, email, credential });
-//       });
-// };
 
 // TODO
 // function SignOut() {
@@ -125,27 +143,22 @@ function SignIn() {
 //   )
 // }
 
-// const logout = () => {
-//   auth.signOut();
-//   console.log("logout");
-// };
-
-
 function ChatRoom(){
 
   // const dummy = useRef();
-
-  // const messagesRef = firestore.collection('messages');
-  // const query = messagesRef.orderBy('createdAt').limit(25);
-
-  // const [messages] = useCollectionData(query, { idField: 'id' });
+  // const que = query(ref(db, 'messages'), orderByChild('createdAt'), limitToLast(10));
+  
+  // TODO 
+  const messages = getMessages()
+  console.log(messages)
 
   const [formValue, setFormValue] = useState('');
+  const { uid, displayName, photoURL } = auth.currentUser;
 
-  // TODO need tto change
+  // userId, name, text, imageUrl
   const sendMessage = async (e) => {
     e.preventDefault();
-    await writeSendMessage("1",formValue, "3", "4") 
+    await writeSendMessage(uid, displayName, formValue, photoURL) 
     setFormValue('');
   }
 
@@ -153,7 +166,7 @@ function ChatRoom(){
       <> 
       <div class='h-96 w-72 bg-black opacity-40 px-4 py-2'>
 
-        {/* {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)} */}
+        {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
 
         {/* <span ref={dummy}></span> */}
           </div>
@@ -165,29 +178,25 @@ function ChatRoom(){
           <button type="submit" disabled={!formValue} class="my-2 px-2 py-1 bg-green-700 rounded-2xl text-xs font-bold">SEND</button>
 
           </form>
-
-          {/* <div class='flex w-72 bg-black opacity-70 rounded-b-3xl'>
-            <div class="ml-3 my-3 pr-30 text-slate-500 text-xs">Type message...</div>
-            <div class="my-2 px-2 py-1 bg-green-700 rounded-2xl text-xs font-bold">SEND</div>
-          </div> */}
       
       </>
     )
 }
 
 
-// function ChatMessage(props) {
-//   const { text, uid, photoURL } = props.message;
+function ChatMessage(props) {
+  const { uid, displayName, text, photoURL } = props.message;
 
-//   const messageClass = uid === auth.currentUser.uid ? 'sent' : 'received';
+  const messageClass = uid === auth.currentUser.uid ? 'sent' : 'received';
 
-//   return (<>
-//     <div className={`message ${messageClass}`}>
-//       <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} />
-//       <p>{text}</p>
-//     </div>
-//   </>)
-// }
+  return (<>
+    <div className={`message ${messageClass}`}>
+      <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} />
+      <p>{displayName}</p>
+      <p>{text}</p>
+    </div>
+  </>)
+}
 
 
 
