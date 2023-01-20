@@ -61,8 +61,8 @@ function App() {
             </div>
           </div>
           
-          {/* <ChatRoom /> */}
-          {user ? <ChatRoom /> : <SignIn />}
+          <ChatRoom />
+          {/* {user ? <ChatRoom /> : <SignIn />} */}
 
         </div>
 
@@ -146,9 +146,10 @@ function ChatRoom(){
 
   // TODO need tto change
   const sendMessage = async (e) => {
-    e.preventDefault();
-    await writeSendMessage("1",formValue, "3", "4") 
-    setFormValue('');
+    // e.preventDefault();
+    // await writeSendMessage("1",formValue, "3", "4") 
+    // setFormValue('');
+    console.log("You typed: " + formValue)
   }
 
     return (
