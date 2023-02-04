@@ -1,15 +1,15 @@
 // import logo from './logo.svg';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import './App.css';
 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { serverTimestamp, getDatabase, ref, set, push, get, child, query, orderByChild, limitToFirst, limitToLast } from 'firebase/database';
+
+import { collection, getDocs, addDoc, query, orderBy, limit, getFirestore, serverTimestamp } from "firebase/firestore"
 
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { useCollectionData } from 'react-firebase-hooks/firestore';
 
 // firebase related code
 const firebaseConfig = {
@@ -24,57 +24,28 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const db = getFirestore(app);
 const auth = getAuth(app);
 
+// TODO Send out message apear
+// TODO scroll messages
+// TODO message push start from bottom
+
 function writeSendMessage(userId, name, text, imageUrl) {
-  // const db = getDatabase();
-  const postListRef = ref(db, 'messages');
-  const newPostRef = push(postListRef);
-  set(newPostRef, {
-    userId: userId,
-    name: name,
-    text: text,
-    createdAt: serverTimestamp(),
-    photoURL : imageUrl
-  });
-
-  // set(ref(db, 'messages/' + userId), {
-  //   userId: userId,
-  //   name: name,
-  //   text: text,
-  //   createdAt: serverTimestamp(),
-  //   photoURL : imageUrl
-  // });
-}
-
-function getMessages(){
-  const que = query(ref(db, 'messages'), orderByChild('createdAt'), limitToLast(10));
-  get(que).then((snapshot) => {
-    if (snapshot.exists()) {
-      const messages = []
-      snapshot.forEach(childSnapshot => {
-        messages.push(childSnapshot.val())
-      })
-      console.log(messages)
-      return messages
-      // console.log(getMessages);
-    } else {
-      console.log("No data available");
+  const messagesCollectionRef = collection(db, "messages")
+  addDoc (messagesCollectionRef, 
+    {
+      userId: userId,
+      displayName: name,
+      text: text,
+      createdAt: serverTimestamp(),
+      photoURL : imageUrl
     }
-  }).catch((error) => {
-    console.error(error);
-  });
+    );
+    console.log(serverTimestamp())
 }
 
 function App() {
-
-  // Read Data
-  // const starCountRef = ref(db, 'users/');
-  // onValue(starCountRef, (snapshot) => {
-  //   const data = snapshot.val();
-  //   console.log(data)
-  // });
 
   const [user] = useAuthState(auth);
 
@@ -88,9 +59,9 @@ function App() {
             <p class="mt-2 text-sm">CHAT ROOM</p>
             <p class="text-slate-500 text-xs">Online</p>
             </div>
+            <SignOut />
           </div>
-          
-          {/* <ChatRoom /> */}
+
           {user ? <ChatRoom /> : <SignIn />}
 
         </div>
@@ -115,6 +86,7 @@ function SignIn() {
       const errorMessage = error.message;
       const email = error.email;
       const credential = GoogleAuthProvider.credentialFromError(error);
+      console.log(error)
     });
   }
 
@@ -136,21 +108,16 @@ function SignIn() {
 
 }
 
-// TODO
-// function SignOut() {
-//   return auth.currentUser && (
-//     <button className="sign-out" onClick={() => auth.signOut()}>Sign Out</button>
-//   )
-// }
+function SignOut() {
+  return auth.currentUser && (
+    <button className="sign-out" onClick={() => auth.signOut()}>Sign Out</button>
+  )
+}
 
 function ChatRoom(){
 
   // const dummy = useRef();
-  // const que = query(ref(db, 'messages'), orderByChild('createdAt'), limitToLast(10));
-  
-  // TODO 
-  const messages = getMessages()
-  console.log(messages)
+  const dummy = useRef();
 
   const [formValue, setFormValue] = useState('');
   const { uid, displayName, photoURL } = auth.currentUser;
@@ -160,15 +127,15 @@ function ChatRoom(){
     e.preventDefault();
     await writeSendMessage(uid, displayName, formValue, photoURL) 
     setFormValue('');
+    dummy.current.scrollIntoView({ behavior: 'smooth' });
   }
 
     return (
       <> 
       <div class='h-96 w-72 bg-black opacity-40 px-4 py-2'>
 
-        {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
-
-        {/* <span ref={dummy}></span> */}
+        <MessageSection />
+        <span ref={dummy}></span>
           </div>
 
           <form onSubmit={sendMessage} class='flex w-72 bg-black opacity-70 rounded-b-3xl'>
@@ -183,19 +150,61 @@ function ChatRoom(){
     )
 }
 
+function MessageSection(){
+  const [messages, setMessages] = useState([]);
+  const messagesCollectionRef = collection(db, "messages")
+
+  useEffect(() => {
+    
+    const getMessages = async () => {
+      // const data = await getDocs(messagesCollectionRef);
+      const que = await query(messagesCollectionRef, orderBy("createdAt"), limit(7));
+      const data = await getDocs(que);
+      setMessages(data.docs.map((doc) => ({...doc.data(), id: doc.id})));
+    };
+
+    getMessages()
+
+  }, []);
+
+  return ( <>
+{messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
+      </>
+  );
+}
+
 
 function ChatMessage(props) {
-  const { uid, displayName, text, photoURL } = props.message;
+  const { userId, displayName, text, photoURL } = props.message;
+  // console.log(auth.currentUser.uid)
 
-  const messageClass = uid === auth.currentUser.uid ? 'sent' : 'received';
+  const messageClass = userId === auth.currentUser.uid ? 'sent' : 'received';
 
-  return (<>
-    <div className={`message ${messageClass}`}>
-      <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} />
-      <p>{displayName}</p>
-      <p>{text}</p>
-    </div>
-  </>)
+  if (messageClass === 'sent') {
+    return (<>
+      <div className={`message ${messageClass} flex mb-1 justify-end`}>
+        <div class="h-10 w-10 mr-2">
+        <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} class="rounded-full" />
+        </div>
+        <div class="py-1">
+        <p class="text-xs">{displayName}</p>
+        <p class="text-sm">{text}</p>
+        </div>
+      </div>
+    </>)
+  } else {
+    return (<>
+      <div className={`message ${messageClass} flex mb-1`}>
+        <div class="h-10 w-10 mr-2">
+        <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} class="rounded-full" />
+        </div>
+        <div class="py-1">
+        <p class="text-xs">{displayName}</p>
+        <p class="text-sm">{text}</p>
+        </div>
+      </div>
+    </>)
+  }
 }
 
 
