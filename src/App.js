@@ -60,7 +60,7 @@ function getMessages(callback) {
 
 function useMessages(){
   const [messages, setMessages] = useState([]);
-  console.log("call messages")
+
   useEffect(() => {
       const unsubscribe = getMessages(setMessages);
       return unsubscribe;
@@ -153,15 +153,13 @@ function ChatRoom(){
 
   const messages = useMessages()
 
-  console.log("run...")
-
   // userId, name, text, imageUrl
   const sendMessage = async (e) => {
     e.preventDefault();
     await writeSendMessage(uid, displayName, formValue, photoURL) 
     setFormValue('');
     dummy.current.scrollIntoView({ behavior: 'smooth' });
-  }
+  } 
   // console.log(dummy)
 
     return (
@@ -190,11 +188,19 @@ function ChatRoom(){
 function ChatMessage(props) {
   const { userId, displayName, text, photoURL, createdAt } = props.message;
   // console.log(auth.currentUser.uid)
-
   const messageClass = userId === auth.currentUser.uid ? 'sent' : 'received';
   const messageAlgn = userId === auth.currentUser.uid ? 'pl-24' : 'pr-24';
-  const date = new Date(createdAt.seconds * 1000)
-  const MessageTime = date.getFullYear() + "/" + ('0' + (date.getMonth()+1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) +  " " + ('0' + (date.getHours())).slice(-2) + ":" + ('0' + (date.getMinutes())).slice(-2)
+
+  let MessageTime = {}
+  if (createdAt == null){
+    MessageTime.time = ''
+  } else {
+    const date = new Date(createdAt.seconds * 1000)
+    MessageTime.time = date.getFullYear() + "/" + ('0' + (date.getMonth()+1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) +  " " + ('0' + (date.getHours())).slice(-2) + ":" + ('0' + (date.getMinutes())).slice(-2)
+  }
+
+  // const date = new Date(createdAt.seconds * 1000)
+  // const MessageTime = date.getFullYear() + "/" + ('0' + (date.getMonth()+1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) +  " " + ('0' + (date.getHours())).slice(-2) + ":" + ('0' + (date.getMinutes())).slice(-2)
 
   return (<>
     <div className={`message ${messageClass} flex mb-1 ${messageAlgn}`}>
@@ -204,7 +210,7 @@ function ChatMessage(props) {
       <div class="py-1">
       <p class="text-xs">{displayName}</p>
       <p class="text-sm bg-color-03 rounded-md px-2">{text}</p>
-      <p class="text-xs">{MessageTime}</p>
+      <p class="text-xs">{MessageTime.time}</p>
       </div>
     </div>
   </>)
