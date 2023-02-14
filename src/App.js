@@ -1,13 +1,13 @@
 // import logo from './logo.svg';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import './App.css';
 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-import { collection, getDocs, addDoc, query, orderBy, limit, getFirestore, serverTimestamp } from "firebase/firestore"
+import { collection, getDocs, addDoc, query, orderBy, limit, getFirestore, onSnapshot, serverTimestamp } from "firebase/firestore"
 
 import { useAuthState } from 'react-firebase-hooks/auth';
 
@@ -40,6 +40,33 @@ function writeSendMessage(userId, name, text, imageUrl) {
     }
     );
     console.log(serverTimestamp())
+}
+
+function getMessages(callback) {
+  return onSnapshot(
+      query(
+          collection(db, 'messages'),
+          orderBy('createdAt', 'desc'), limit(20)
+      ),
+      (querySnapshot) => {
+          const messages = querySnapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+          }));
+          callback(messages);
+      }
+  );
+}
+
+function useMessages(){
+  const [messages, setMessages] = useState([]);
+  console.log("call messages")
+  useEffect(() => {
+      const unsubscribe = getMessages(setMessages);
+      return unsubscribe;
+  }, []);
+
+  return messages;
 }
 
 function App() {
@@ -124,17 +151,9 @@ function ChatRoom(){
   const [formValue, setFormValue] = useState('');
   const { uid, displayName, photoURL } = auth.currentUser;
 
-  const [messages, setMessages] = useState([]);
-  const messagesCollectionRef = collection(db, "messages")
+  const messages = useMessages()
 
-  // FIXME This will call Firebase constantly
-  const getMessages = async () => {
-    const que = await query(messagesCollectionRef, orderBy("createdAt", "desc"), limit(20));
-    const data = await getDocs(que);
-    setMessages(data.docs.map((doc) => ({...doc.data(), id: doc.id})));
-  };
-  console.log("Get")
-  getMessages()
+  console.log("run...")
 
   // userId, name, text, imageUrl
   const sendMessage = async (e) => {
@@ -169,36 +188,26 @@ function ChatRoom(){
 
 
 function ChatMessage(props) {
-  const { userId, displayName, text, photoURL } = props.message;
+  const { userId, displayName, text, photoURL, createdAt } = props.message;
   // console.log(auth.currentUser.uid)
 
   const messageClass = userId === auth.currentUser.uid ? 'sent' : 'received';
+  const messageAlgn = userId === auth.currentUser.uid ? 'pl-24' : 'pr-24';
+  const date = new Date(createdAt.seconds * 1000)
+  const MessageTime = date.getFullYear() + "/" + ('0' + (date.getMonth()+1)).slice(-2) + "/" + ('0' + date.getDate()).slice(-2) +  " " + ('0' + (date.getHours())).slice(-2) + ":" + ('0' + (date.getMinutes())).slice(-2)
 
-  if (messageClass === 'sent') {
-    return (<>
-      <div className={`message ${messageClass} flex mb-1 pl-24`}>
-        <div class="h-10 w-10 mr-2">
-        <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} class="rounded-full" />
-        </div>
-        <div class="py-1">
-        <p class="text-xs">{displayName}</p>
-        <p class="text-sm bg-color-03 rounded-md px-2">{text}</p>
-        </div>
+  return (<>
+    <div className={`message ${messageClass} flex mb-1 ${messageAlgn}`}>
+      <div class="flex-none h-10 w-10 mr-2">
+      <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} class="rounded-full" />
       </div>
-    </>)
-  } else {
-    return (<>
-      <div className={`message ${messageClass} flex mb-1 pr-24`}>
-        <div class="h-10 w-10 mr-2">
-        <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} class="rounded-full" />
-        </div>
-        <div class="py-1">
-        <p class="text-xs">{displayName}</p>
-        <p class="text-sm bg-color-03 rounded-md px-2">{text}</p>
-        </div>
+      <div class="py-1">
+      <p class="text-xs">{displayName}</p>
+      <p class="text-sm bg-color-03 rounded-md px-2">{text}</p>
+      <p class="text-xs">{MessageTime}</p>
       </div>
-    </>)
-  }
+    </div>
+  </>)
 }
 
 
