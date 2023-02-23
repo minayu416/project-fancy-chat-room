@@ -208,9 +208,9 @@ function ChatMessage(props) {
       <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} class="rounded-full" />
       </div>
       <div class="py-1">
-      <p class="text-xs">{displayName}</p>
-      <p class="text-sm bg-color-03 rounded-md px-2">{text}</p>
-      <p class="text-xs">{MessageTime.time}</p>
+      <p class="text-xs font-voll">{displayName}</p>
+      <p class="text-sm bg-color-03 rounded-md px-2 py-1 font-voll">{text}</p>
+      <p class="text-xs font-roboto">{MessageTime.time}</p>
       </div>
     </div>
   </>)

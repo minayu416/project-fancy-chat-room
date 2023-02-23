@@ -71,3 +71,11 @@ input {
 .bg-color-03 {
   background: rgba(0, 0, 0, 0.3);
 }
+
+.font-voll {
+	font-family: 'Vollkorn', serif;
+}
+
+.font-roboto {
+	font-family: 'Roboto Slab',serif;
+}
