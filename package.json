@@ -2,7 +2,7 @@
   "name": "fancy-chat-room",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://github.com/minayu416/project-fancy-chat-room",
+  "homepage": "https://minayu.site/project-fancy-chat-room",
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
