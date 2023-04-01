@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/minayu416/project-fancy-chat-room/static/css/main.0619ac60.css",
+    "main.js": "/minayu416/project-fancy-chat-room/static/js/main.b35833c4.js",
+    "static/js/787.7059812f.chunk.js": "/minayu416/project-fancy-chat-room/static/js/787.7059812f.chunk.js",
+    "static/media/wallpaper.jpeg": "/minayu416/project-fancy-chat-room/static/media/wallpaper.dcd719e3014f2d34a427.jpeg",
+    "index.html": "/minayu416/project-fancy-chat-room/index.html",
+    "main.0619ac60.css.map": "/minayu416/project-fancy-chat-room/static/css/main.0619ac60.css.map",
+    "main.b35833c4.js.map": "/minayu416/project-fancy-chat-room/static/js/main.b35833c4.js.map",
+    "787.7059812f.chunk.js.map": "/minayu416/project-fancy-chat-room/static/js/787.7059812f.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0619ac60.css",
+    "static/js/main.b35833c4.js"
+  ]
+}
